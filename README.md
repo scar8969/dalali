@@ -16,7 +16,7 @@ Create these in `.env` locally and in Vercel project settings:
 
 ```bash
 SUPABASE_URL=your-supabase-project-url
-SUPABASE_PUBLISHABLE_KEY=your-publishable-key
+SUPABASE_ANON_KEY=your-anon-public-key
 SECRET_KEY=use-a-long-random-secret
 ```
 
@@ -30,13 +30,17 @@ SECRET_KEY=use-a-long-random-secret
 
 ## Fix Vercel Internal Server Error
 
-If Vercel shows `SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY must be configured`, add both values in Vercel:
+You can also use `SUPABASE_PUBLISHABLE_KEY` instead of `SUPABASE_ANON_KEY` if your Supabase project key works with the Python client.
+
+If Vercel shows a Supabase configuration error, add the values in Vercel:
 
 1. Open your Vercel project.
 2. Go to Settings > Environment Variables.
 3. Add `SUPABASE_URL` from Supabase Project Settings > API.
-4. Add `SUPABASE_PUBLISHABLE_KEY` from Supabase Project Settings > API.
+4. Add `SUPABASE_ANON_KEY` from Supabase Project Settings > API.
 5. Redeploy the project.
+
+If the app says `Invalid API key`, the copied key is wrong, incomplete, or from a different Supabase project. Copy the classic anon public key if available.
 
 ## Local Development
 
