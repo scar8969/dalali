@@ -46,9 +46,13 @@ def db():
     global _supabase
     if _supabase is None:
         url = os.environ.get("SUPABASE_URL")
-        key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+        key = (
+            os.environ.get("SUPABASE_PUBLISHABLE_KEY")
+            or os.environ.get("SUPABASE_KEY")
+            or os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+        )
         if not url or not key:
-            raise SetupError("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be configured in Vercel.")
+            raise SetupError("SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY must be configured in Vercel.")
         _supabase = create_client(url, key)
     return _supabase
 
