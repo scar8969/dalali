@@ -1,9 +1,4 @@
-create table if not exists public.users (
-  id bigserial primary key,
-  username text not null unique,
-  password_hash text not null,
-  created_at timestamptz not null default now()
-);
+drop table if exists public.users cascade;
 
 create table if not exists public.orders (
   id bigserial primary key,
@@ -14,8 +9,9 @@ create table if not exists public.orders (
   exchange_rate_to_inr numeric(14, 4) not null,
   unit_price_inr numeric(14, 2) not null,
   final_price_inr numeric(14, 2) not null,
-  created_by bigint references public.users(id),
   created_at timestamptz not null default now()
 );
+
+alter table public.orders drop column if exists created_by;
 
 create index if not exists orders_created_at_idx on public.orders(created_at desc);

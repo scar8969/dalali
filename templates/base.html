@@ -10,18 +10,11 @@
   <body>
     <nav class="navbar navbar-expand-lg border-bottom bg-white">
       <div class="container">
-        <a class="navbar-brand fw-semibold" href="{{ url_for('dashboard') if current_user else url_for('login') }}">Sales Order Portal</a>
-        {% if current_user %}
-          <div class="d-flex align-items-center gap-2 ms-auto">
-            <span class="small text-muted">{{ current_user.username }}</span>
-            <a class="btn btn-sm btn-outline-primary" href="{{ url_for('dashboard') }}">Dashboard</a>
-            <a class="btn btn-sm btn-primary" href="{{ url_for('new_order') }}">New Order</a>
-            <form method="post" action="{{ url_for('logout') }}" class="m-0">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button class="btn btn-sm btn-light" type="submit">Logout</button>
-            </form>
-          </div>
-        {% endif %}
+        <a class="navbar-brand fw-semibold" href="{{ url_for('dashboard') }}">Sales Order Portal</a>
+        <div class="d-flex align-items-center gap-2 ms-auto">
+          <a class="btn btn-sm btn-outline-primary" href="{{ url_for('dashboard') }}">Dashboard</a>
+          <a class="btn btn-sm btn-primary" href="{{ url_for('new_order') }}">New Order</a>
+        </div>
       </div>
     </nav>
 

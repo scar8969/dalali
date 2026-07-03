@@ -1,14 +1,14 @@
 # Sales Order Portal
 
-Single-user sales order calculator hosted on Vercel with Supabase for data storage.
+Open sales order calculator hosted on Vercel with Supabase for data storage. There is no login and no password.
 
 ## Workflow
 
-1. Login with your admin username and password.
+1. Open the portal.
 2. Add product name, quantity, currency (`HKD` or `CNY`), and unit price.
 3. The app fetches the live INR exchange rate.
 4. The app calculates `unit price x quantity x INR rate x 1.03`.
-5. The order is saved in Supabase and visible from anywhere after login.
+5. The order is saved in Supabase.
 
 ## Environment Variables
 
@@ -18,11 +18,9 @@ Create these in `.env` locally and in Vercel project settings:
 SUPABASE_URL=your-supabase-project-url
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 SECRET_KEY=use-a-long-random-secret
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=change-this-password
 ```
 
-`ADMIN_USERNAME` and `ADMIN_PASSWORD` create your login automatically if it does not exist.
+`SECRET_KEY` is only used for form protection. It is not a login password.
 
 ## Supabase Setup
 

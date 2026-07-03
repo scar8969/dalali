@@ -6,19 +6,8 @@ from pathlib import Path
 
 import requests
 from dotenv import load_dotenv
-from flask import (
-    Flask,
-    abort,
-    flash,
-    jsonify,
-    redirect,
-    render_template,
-    request,
-    session,
-    url_for,
-)
+from flask import Flask, abort, flash, jsonify, redirect, render_template, request, session, url_for
 from supabase import create_client
-from werkzeug.security import check_password_hash, generate_password_hash
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -37,7 +26,6 @@ SUPPORTED_CURRENCIES = {"HKD", "CNY"}
 
 _supabase = None
 _rate_cache = {}
-_bootstrapped = False
 
 
 def money(value):
@@ -61,12 +49,6 @@ def db():
     return _supabase
 
 
-def current_user():
-    if "user_id" not in session:
-        return None
-    return {"id": session["user_id"], "username": session.get("username")}
-
-
 def csrf_token():
     token = session.get("csrf_token")
     if not token:
@@ -81,39 +63,9 @@ def require_csrf():
         abort(400)
 
 
-def login_required():
-    if not current_user():
-        return redirect(url_for("login", next=request.path))
-    return None
-
-
 @app.context_processor
 def inject_context():
-    return {"current_user": current_user(), "csrf_token": csrf_token}
-
-
-def ensure_admin_user():
-    username = os.environ.get("ADMIN_USERNAME")
-    password = os.environ.get("ADMIN_PASSWORD")
-    if not username or not password:
-        return
-
-    existing = db().table("users").select("id").eq("username", username).limit(1).execute().data
-    if existing:
-        return
-
-    db().table("users").insert(
-        {"username": username, "password_hash": generate_password_hash(password)}
-    ).execute()
-
-
-@app.before_request
-def bootstrap_once():
-    global _bootstrapped
-    if _bootstrapped or request.endpoint == "health":
-        return
-    ensure_admin_user()
-    _bootstrapped = True
+    return {"csrf_token": csrf_token}
 
 
 def parse_decimal(name):
@@ -178,53 +130,17 @@ def get_order(order_id):
 
 @app.route("/")
 def home():
-    if current_user():
-        return redirect(url_for("dashboard"))
-    return redirect(url_for("login"))
-
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        require_csrf()
-        username = request.form.get("username", "").strip()
-        password = request.form.get("password", "")
-        user = db().table("users").select("*").eq("username", username).limit(1).execute().data
-
-        if user and check_password_hash(user[0]["password_hash"], password):
-            session.clear()
-            session["user_id"] = user[0]["id"]
-            session["username"] = user[0]["username"]
-            session["csrf_token"] = secrets.token_urlsafe(32)
-            return redirect(request.args.get("next") or url_for("dashboard"))
-
-        flash("Invalid username or password.", "error")
-
-    return render_template("login.html")
-
-
-@app.route("/logout", methods=["POST"])
-def logout():
-    require_csrf()
-    session.clear()
-    return redirect(url_for("login"))
+    return redirect(url_for("dashboard"))
 
 
 @app.route("/dashboard")
 def dashboard():
-    auth_redirect = login_required()
-    if auth_redirect:
-        return auth_redirect
     orders = db().table("orders").select("*").order("created_at", desc=True).execute().data
     return render_template("dashboard.html", orders=orders)
 
 
 @app.route("/orders/new", methods=["GET", "POST"])
 def new_order():
-    auth_redirect = login_required()
-    if auth_redirect:
-        return auth_redirect
-
     preview = None
     form = {}
     if request.method == "POST":
@@ -268,7 +184,6 @@ def new_order():
                 "exchange_rate_to_inr": float(calculation["exchange_rate_to_inr"]),
                 "unit_price_inr": float(calculation["unit_price_inr"]),
                 "final_price_inr": float(calculation["final_price_inr"]),
-                "created_by": current_user()["id"],
             }
         ).execute()
 
@@ -280,9 +195,6 @@ def new_order():
 
 @app.route("/orders/<int:order_id>")
 def order_detail(order_id):
-    auth_redirect = login_required()
-    if auth_redirect:
-        return auth_redirect
     order = get_order(order_id)
     if not order:
         abort(404)
@@ -291,9 +203,6 @@ def order_detail(order_id):
 
 @app.route("/orders/<int:order_id>/delete", methods=["POST"])
 def delete_order(order_id):
-    auth_redirect = login_required()
-    if auth_redirect:
-        return auth_redirect
     require_csrf()
     db().table("orders").delete().eq("id", order_id).execute()
     flash("Order deleted.", "success")
@@ -302,9 +211,6 @@ def delete_order(order_id):
 
 @app.route("/api/rates")
 def api_rates():
-    auth_redirect = login_required()
-    if auth_redirect:
-        return auth_redirect
     currency = request.args.get("from", "HKD").upper()
     try:
         rate = get_inr_rate(currency)
