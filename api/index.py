@@ -28,6 +28,10 @@ _supabase = None
 _rate_cache = {}
 
 
+class SetupError(Exception):
+    pass
+
+
 def money(value):
     if value is None or value == "":
         return "-"
@@ -44,9 +48,13 @@ def db():
         url = os.environ.get("SUPABASE_URL")
         key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
         if not url or not key:
-            raise RuntimeError("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be configured.")
+            raise SetupError("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be configured in Vercel.")
         _supabase = create_client(url, key)
     return _supabase
+
+
+def render_setup_error(error):
+    return render_template("setup_error.html", error=str(error)), 500
 
 
 def csrf_token():
@@ -135,7 +143,10 @@ def home():
 
 @app.route("/dashboard")
 def dashboard():
-    orders = db().table("orders").select("*").order("created_at", desc=True).execute().data
+    try:
+        orders = db().table("orders").select("*").order("created_at", desc=True).execute().data
+    except Exception as exc:
+        return render_setup_error(exc)
     return render_template("dashboard.html", orders=orders)
 
 
@@ -175,17 +186,20 @@ def new_order():
         if request.form.get("action") == "preview":
             return render_template("order_form.html", preview=preview, form=form)
 
-        db().table("orders").insert(
-            {
-                "product_name": product_name,
-                "quantity": quantity,
-                "currency_used": currency,
-                "unit_price_original": float(unit_price),
-                "exchange_rate_to_inr": float(calculation["exchange_rate_to_inr"]),
-                "unit_price_inr": float(calculation["unit_price_inr"]),
-                "final_price_inr": float(calculation["final_price_inr"]),
-            }
-        ).execute()
+        try:
+            db().table("orders").insert(
+                {
+                    "product_name": product_name,
+                    "quantity": quantity,
+                    "currency_used": currency,
+                    "unit_price_original": float(unit_price),
+                    "exchange_rate_to_inr": float(calculation["exchange_rate_to_inr"]),
+                    "unit_price_inr": float(calculation["unit_price_inr"]),
+                    "final_price_inr": float(calculation["final_price_inr"]),
+                }
+            ).execute()
+        except Exception as exc:
+            return render_setup_error(exc)
 
         flash("Order saved.", "success")
         return redirect(url_for("dashboard"))
@@ -195,7 +209,10 @@ def new_order():
 
 @app.route("/orders/<int:order_id>")
 def order_detail(order_id):
-    order = get_order(order_id)
+    try:
+        order = get_order(order_id)
+    except Exception as exc:
+        return render_setup_error(exc)
     if not order:
         abort(404)
     return render_template("order_detail.html", order=order)
@@ -204,7 +221,10 @@ def order_detail(order_id):
 @app.route("/orders/<int:order_id>/delete", methods=["POST"])
 def delete_order(order_id):
     require_csrf()
-    db().table("orders").delete().eq("id", order_id).execute()
+    try:
+        db().table("orders").delete().eq("id", order_id).execute()
+    except Exception as exc:
+        return render_setup_error(exc)
     flash("Order deleted.", "success")
     return redirect(url_for("dashboard"))
 

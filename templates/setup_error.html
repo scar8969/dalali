@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="summary-panel">
+  <h1 class="h4 mb-3">Setup Needed</h1>
+  <p class="text-muted">The app could not connect to Supabase or the database schema is not ready.</p>
+
+  <div class="alert alert-danger">
+    <strong>Error:</strong> {{ error }}
+  </div>
+
+  <h2 class="h6 mt-4">Check These</h2>
+  <ul class="mb-0">
+    <li>In Vercel, add `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in Environment Variables.</li>
+    <li>In Supabase SQL Editor, run the latest `supabase_schema.sql` from this repo.</li>
+    <li>Redeploy the Vercel project after changing environment variables.</li>
+  </ul>
+</div>
+{% endblock %}

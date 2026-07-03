@@ -28,6 +28,16 @@ SECRET_KEY=use-a-long-random-secret
 2. Open the SQL editor.
 3. Run the contents of `supabase_schema.sql`.
 
+## Fix Vercel Internal Server Error
+
+If Vercel shows `SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be configured`, add both values in Vercel:
+
+1. Open your Vercel project.
+2. Go to Settings > Environment Variables.
+3. Add `SUPABASE_URL` from Supabase Project Settings > API.
+4. Add `SUPABASE_SERVICE_ROLE_KEY` from Supabase Project Settings > API.
+5. Redeploy the project.
+
 ## Local Development
 
 ```bash
