@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+  <div>
+    <h1 class="h4 mb-1">Orders</h1>
+    <p class="text-muted mb-0">Your saved order calculations.</p>
+  </div>
+  <a class="btn btn-primary" href="{{ url_for('new_order') }}">New Order</a>
+</div>
+
+<div class="table-responsive border rounded bg-white">
+  <table class="table align-middle mb-0">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Product</th>
+        <th class="text-end">Qty</th>
+        <th>Currency</th>
+        <th class="text-end">Unit Price</th>
+        <th class="text-end">INR Rate</th>
+        <th class="text-end">Final INR</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for order in orders %}
+        <tr>
+          <td>#{{ order.id }}</td>
+          <td>{{ order.product_name }}</td>
+          <td class="text-end">{{ order.quantity }}</td>
+          <td>{{ order.currency_used or '-' }}</td>
+          <td class="text-end">{{ order.unit_price_original|money }}</td>
+          <td class="text-end">{{ order.exchange_rate_to_inr or '-' }}</td>
+          <td class="text-end">{{ order.final_price_inr|money }}</td>
+          <td class="text-end">
+            <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('order_detail', order_id=order.id) }}">View</a>
+          </td>
+        </tr>
+      {% else %}
+        <tr>
+          <td colspan="7" class="text-center text-muted py-5">No orders yet.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

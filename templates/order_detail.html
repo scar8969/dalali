@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="summary-panel">
+  <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
+    <div>
+      <h1 class="h4 mb-1">Order #{{ order.id }}</h1>
+      <p class="text-muted mb-0">{{ order.product_name }}</p>
+    </div>
+  </div>
+
+  <dl class="row mb-0 detail-list">
+    <dt class="col-sm-4">Product</dt>
+    <dd class="col-sm-8">{{ order.product_name }}</dd>
+    <dt class="col-sm-4">Quantity</dt>
+    <dd class="col-sm-8">{{ order.quantity }}</dd>
+    <dt class="col-sm-4">Currency used</dt>
+    <dd class="col-sm-8">{{ order.currency_used or '-' }}</dd>
+    <dt class="col-sm-4">Unit price entered</dt>
+    <dd class="col-sm-8">{{ order.unit_price_original|money }}</dd>
+    <dt class="col-sm-4">INR rate</dt>
+    <dd class="col-sm-8">{{ order.exchange_rate_to_inr or '-' }}</dd>
+    <dt class="col-sm-4">Unit price INR</dt>
+    <dd class="col-sm-8">INR {{ order.unit_price_inr|money }}</dd>
+    <dt class="col-sm-4">Final INR with 3%</dt>
+    <dd class="col-sm-8 fw-semibold">INR {{ order.final_price_inr|money }}</dd>
+  </dl>
+
+  <div class="mt-4">
+    <a class="btn btn-light" href="{{ url_for('dashboard') }}">Back</a>
+    <form method="post" action="{{ url_for('delete_order', order_id=order.id) }}" class="d-inline" onsubmit="return confirm('Delete this order?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-outline-danger" type="submit">Delete</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

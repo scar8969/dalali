@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="form-panel">
+  <h1 class="h4 mb-1">New Order</h1>
+  <p class="text-muted mb-4">Enter the item, quantity, and HKD/CNY unit price. The app converts to INR and adds 3%.</p>
+
+  <form method="post" class="vstack gap-3">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div>
+      <label class="form-label" for="product_name">Product name</label>
+      <input class="form-control" id="product_name" name="product_name" value="{{ form.product_name or '' }}" required autofocus>
+    </div>
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label" for="quantity">Quantity</label>
+        <input class="form-control" id="quantity" name="quantity" type="number" min="1" step="1" value="{{ form.quantity or '' }}" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="currency">Currency</label>
+        <select class="form-select" id="currency" name="currency" required>
+          <option value="HKD" {% if form.currency == 'HKD' %}selected{% endif %}>HKD</option>
+          <option value="CNY" {% if form.currency == 'CNY' %}selected{% endif %}>CNY</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="unit_price">Unit price</label>
+        <input class="form-control" id="unit_price" name="unit_price" type="number" min="0.01" step="0.01" value="{{ form.unit_price or '' }}" required>
+      </div>
+    </div>
+
+    {% if preview %}
+      <div class="price-preview">
+        <div><span>Exchange rate to INR</span><strong>{{ preview.exchange_rate_to_inr }}</strong></div>
+        <div><span>Unit price in INR</span><strong>INR {{ preview.unit_price_inr|money }}</strong></div>
+        <div><span>Total with 3% markup</span><strong>INR {{ preview.final_price_inr|money }}</strong></div>
+      </div>
+    {% endif %}
+
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline-primary" type="submit" name="action" value="preview">Preview</button>
+      <button class="btn btn-primary" type="submit" name="action" value="save">Save Order</button>
+      <a class="btn btn-light" href="{{ url_for('dashboard') }}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
