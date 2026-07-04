@@ -1,47 +1,257 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="form-panel">
-  <h1 class="h4 mb-1">New Order</h1>
-  <p class="text-muted mb-4">Enter the item, quantity, and HKD/CNY unit price. The app converts to INR and adds 3%.</p>
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <h1 class="h4 mb-1">New Order</h1>
+        <p class="text-muted mb-4">Add one or more line items. Currency, quantity, and unit price. The app converts to INR and adds 3%.</p>
 
-  <form method="post" class="vstack gap-3">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <div>
-      <label class="form-label" for="product_name">Product name</label>
-      <input class="form-control" id="product_name" name="product_name" value="{{ form.product_name or '' }}" required autofocus>
+        <form method="post" id="orderForm" class="vstack gap-3">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" for="reference">Reference <span class="text-danger">*</span></label>
+              <input class="form-control" id="reference" name="reference" required value="{{ form.reference or '' }}" placeholder="e.g. PO-2026-07-01">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="currency">Currency</label>
+              <select class="form-select" id="currency" name="currency" required>
+                <option value="HKD" {% if form.currency == 'HKD' or not form.currency %}selected{% endif %}>HKD</option>
+                <option value="CNY" {% if form.currency == 'CNY' %}selected{% endif %}>CNY</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="notes">Notes</label>
+              <input class="form-control" id="notes" name="notes" value="{{ form.notes or '' }}" placeholder="optional">
+            </div>
+          </div>
+
+          <hr class="my-2">
+
+          <div class="d-flex align-items-center justify-content-between">
+            <strong>Line Items</strong>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="addItem">+ Add Item</button>
+          </div>
+
+          <div id="itemsBox" class="vstack gap-2">
+            {% set ns = namespace(idx=0) %}
+            {% set raw_names = form.getlist('item_product[]') if form else [] %}
+            {% set raw_qtys = form.getlist('item_quantity[]') if form else [] %}
+            {% set raw_prices = form.getlist('item_unit_price[]') if form else [] %}
+            {% if raw_names %}
+              {% for n in raw_names %}
+                {% set ns.idx = loop.index0 %}
+                <div class="item-row row g-2 align-items-end">
+                  <div class="col-md-5">
+                    <label class="form-label small">Product</label>
+                    <input class="form-control" name="item_product[]" value="{{ n }}" required>
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label small">Qty</label>
+                    <input class="form-control" name="item_quantity[]" type="number" min="1" step="1" value="{{ raw_qtys[ns.idx] or '' }}" required>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label small">Unit Price (<span class="cur">{{ form.currency or 'HKD' }}</span>)</label>
+                    <input class="form-control item-price" name="item_unit_price[]" type="number" min="0.01" step="0.01" value="{{ raw_prices[ns.idx] or '' }}" required>
+                  </div>
+                  <div class="col-md-1 text-end">
+                    <button type="button" class="btn btn-outline-danger btn-sm remove-item">&times;</button>
+                  </div>
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="item-row row g-2 align-items-end">
+                <div class="col-md-5">
+                  <label class="form-label small">Product</label>
+                  <input class="form-control" name="item_product[]" required>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label small">Qty</label>
+                  <input class="form-control" name="item_quantity[]" type="number" min="1" step="1" required>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label small">Unit Price (<span class="cur">HKD</span>)</label>
+                  <input class="form-control item-price" name="item_unit_price[]" type="number" min="0.01" step="0.01" required>
+                </div>
+                <div class="col-md-1 text-end">
+                  <button type="button" class="btn btn-outline-danger btn-sm remove-item">&times;</button>
+                </div>
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="d-flex flex-wrap gap-2 mt-2">
+            <button class="btn btn-outline-primary" type="submit" name="action" value="preview">Preview</button>
+            <button class="btn btn-primary" type="submit" name="action" value="save">Save Order</button>
+            <a class="btn btn-light" href="{{ url_for('dashboard') }}">Cancel</a>
+            <span class="ms-auto small text-muted" id="liveHint">Enter values to see live preview.</span>
+          </div>
+        </form>
+      </div>
     </div>
-    <div class="row g-3">
-      <div class="col-md-4">
-        <label class="form-label" for="quantity">Quantity</label>
-        <input class="form-control" id="quantity" name="quantity" type="number" min="1" step="1" value="{{ form.quantity or '' }}" required>
-      </div>
-      <div class="col-md-4">
-        <label class="form-label" for="currency">Currency</label>
-        <select class="form-select" id="currency" name="currency" required>
-          <option value="HKD" {% if form.currency == 'HKD' %}selected{% endif %}>HKD</option>
-          <option value="CNY" {% if form.currency == 'CNY' %}selected{% endif %}>CNY</option>
-        </select>
-      </div>
-      <div class="col-md-4">
-        <label class="form-label" for="unit_price">Unit price</label>
-        <input class="form-control" id="unit_price" name="unit_price" type="number" min="0.01" step="0.01" value="{{ form.unit_price or '' }}" required>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card border-0 shadow-sm sticky-top" style="top: 80px;">
+      <div class="card-body">
+        <h2 class="h5 mb-3">Live Preview</h2>
+        <div id="livePreview" class="price-preview">
+          <div><span>Currency</span><strong id="lpCurrency">HKD</strong></div>
+          <div><span>Total entered</span><strong id="lpEntered">-</strong></div>
+          <div><span>Exchange rate to INR</span><strong id="lpRate">-</strong></div>
+          <div><span>Subtotal INR</span><strong id="lpSubtotal">-</strong></div>
+          <div class="total"><span>Final INR (3% markup)</span><strong id="lpFinal">-</strong></div>
+        </div>
+        <p class="text-muted small mt-3 mb-0">Rates fetched live and cached for 10 minutes.</p>
       </div>
     </div>
+  </div>
+</div>
+
+{% if preview %}
+<script>
+  window.SERVER_PREVIEW = {{ preview|tojson }};
+</script>
+{% endif %}
+
+<script>
+  (function () {
+    const currencySel = document.getElementById("currency");
+    const itemsBox = document.getElementById("itemsBox");
+    const addBtn = document.getElementById("addItem");
+    const form = document.getElementById("orderForm");
+    const lpCurrency = document.getElementById("lpCurrency");
+    const lpEntered = document.getElementById("lpEntered");
+    const lpRate = document.getElementById("lpRate");
+    const lpSubtotal = document.getElementById("lpSubtotal");
+    const lpFinal = document.getElementById("lpFinal");
+    const liveHint = document.getElementById("liveHint");
+
+    function updateCurrencyLabels() {
+      document.querySelectorAll(".cur").forEach(el => el.textContent = currencySel.value);
+    }
+
+    function rowHtml() {
+      return `
+        <div class="item-row row g-2 align-items-end">
+          <div class="col-md-5">
+            <label class="form-label small">Product</label>
+            <input class="form-control" name="item_product[]" required>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small">Qty</label>
+            <input class="form-control" name="item_quantity[]" type="number" min="1" step="1" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small">Unit Price (<span class="cur">${currencySel.value}</span>)</label>
+            <input class="form-control item-price" name="item_unit_price[]" type="number" min="0.01" step="0.01" required>
+          </div>
+          <div class="col-md-1 text-end">
+            <button type="button" class="btn btn-outline-danger btn-sm remove-item">&times;</button>
+          </div>
+        </div>`;
+    }
+
+    addBtn.addEventListener("click", () => {
+      itemsBox.insertAdjacentHTML("beforeend", rowHtml());
+    });
+
+    itemsBox.addEventListener("click", (e) => {
+      if (e.target.classList.contains("remove-item")) {
+        const rows = itemsBox.querySelectorAll(".item-row");
+        if (rows.length > 1) e.target.closest(".item-row").remove();
+        else flashLocal("At least one item is required.");
+      }
+    });
+
+    currencySel.addEventListener("change", () => {
+      updateCurrencyLabels();
+      fetchRate();
+    });
+
+    function flashLocal(msg) {
+      liveHint.textContent = msg;
+      liveHint.classList.add("text-danger");
+      setTimeout(() => liveHint.classList.remove("text-danger"), 1500);
+    }
+
+    function fmt(n) {
+      if (!isFinite(n)) return "-";
+      return n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function compute() {
+      let total = 0;
+      let qty = 0;
+      itemsBox.querySelectorAll(".item-row").forEach(r => {
+        const q = parseFloat(r.querySelector('[name="item_quantity[]"]').value) || 0;
+        const p = parseFloat(r.querySelector('[name="item_unit_price[]"]').value) || 0;
+        total += q * p;
+        qty += q;
+      });
+      return { total, qty };
+    }
+
+    let rateCache = {};
+    async function fetchRate() {
+      const cur = currencySel.value;
+      if (rateCache[cur]) return rateCache[cur];
+      try {
+        const res = await fetch(`/api/rates?from=${cur}`);
+        const data = await res.json();
+        if (data.rate) {
+          rateCache[cur] = data.rate;
+          return data.rate;
+        }
+      } catch (e) {}
+      return null;
+    }
+
+    async function refresh() {
+      lpCurrency.textContent = currencySel.value;
+      const { total, qty } = compute();
+      lpEntered.textContent = total ? total.toFixed(2) : "-";
+      if (!total) {
+        lpRate.textContent = "-";
+        lpSubtotal.textContent = "-";
+        lpFinal.textContent = "-";
+        liveHint.textContent = "Enter values to see live preview.";
+        return;
+      }
+      const rate = await fetchRate();
+      if (!rate) {
+        liveHint.textContent = "Could not fetch live rate. Try Preview to retry.";
+        lpRate.textContent = "unavailable";
+        lpSubtotal.textContent = "-";
+        lpFinal.textContent = "-";
+        return;
+      }
+      const subtotal = total * rate;
+      const final = subtotal * 1.03;
+      lpRate.textContent = rate.toFixed(4);
+      lpSubtotal.textContent = "INR " + fmt(subtotal);
+      lpFinal.textContent = "INR " + fmt(final);
+      liveHint.textContent = "Live rate cached for 10 minutes.";
+    }
+
+    itemsBox.addEventListener("input", refresh);
+    currencySel.addEventListener("change", updateCurrencyLabels);
+    updateCurrencyLabels();
+    refresh();
 
     {% if preview %}
-      <div class="price-preview">
-        <div><span>Exchange rate to INR</span><strong>{{ preview.exchange_rate_to_inr }}</strong></div>
-        <div><span>Unit price in INR</span><strong>INR {{ preview.unit_price_inr|money }}</strong></div>
-        <div><span>Total with 3% markup</span><strong>INR {{ preview.final_price_inr|money }}</strong></div>
-      </div>
+    (function () {
+      const p = window.SERVER_PREVIEW;
+      lpCurrency.textContent = p.currency;
+      lpEntered.textContent = (p.unit_price).toFixed(2);
+      lpRate.textContent = (p.exchange_rate).toFixed(4);
+      lpSubtotal.textContent = "INR " + fmt(p.subtotal_inr);
+      lpFinal.textContent = "INR " + fmt(p.final_inr);
+    })();
     {% endif %}
-
-    <div class="d-flex gap-2">
-      <button class="btn btn-outline-primary" type="submit" name="action" value="preview">Preview</button>
-      <button class="btn btn-primary" type="submit" name="action" value="save">Save Order</button>
-      <a class="btn btn-light" href="{{ url_for('dashboard') }}">Cancel</a>
-    </div>
-  </form>
-</div>
+  })();
+</script>
 {% endblock %}

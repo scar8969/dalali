@@ -1,48 +1,103 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+<div class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-4">
   <div>
-    <h1 class="h4 mb-1">Orders</h1>
-    <p class="text-muted mb-0">Your saved order calculations.</p>
+    <h1 class="h3 mb-1">Orders</h1>
+    <p class="text-muted mb-0">All saved order calculations.</p>
   </div>
-  <a class="btn btn-primary" href="{{ url_for('new_order') }}">New Order</a>
+  <div class="d-flex gap-2">
+    <input id="search" class="form-control form-control-sm" placeholder="Search reference or product..." style="width: 240px;">
+    <a class="btn btn-primary btn-sm" href="{{ url_for('new_order') }}">+ New Order</a>
+  </div>
 </div>
 
-<div class="table-responsive border rounded bg-white">
-  <table class="table align-middle mb-0">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Product</th>
-        <th class="text-end">Qty</th>
-        <th>Currency</th>
-        <th class="text-end">Unit Price</th>
-        <th class="text-end">INR Rate</th>
-        <th class="text-end">Final INR</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for order in orders %}
-        <tr>
-          <td>#{{ order.id }}</td>
-          <td>{{ order.product_name }}</td>
-          <td class="text-end">{{ order.quantity }}</td>
-          <td>{{ order.currency_used or '-' }}</td>
-          <td class="text-end">{{ order.unit_price_original|money }}</td>
-          <td class="text-end">{{ order.exchange_rate_to_inr or '-' }}</td>
-          <td class="text-end">{{ order.final_price_inr|money }}</td>
-          <td class="text-end">
-            <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('order_detail', order_id=order.id) }}">View</a>
-          </td>
-        </tr>
-      {% else %}
-        <tr>
-          <td colspan="7" class="text-center text-muted py-5">No orders yet.</td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<div class="row g-3 mb-3">
+  <div class="col-md-4">
+    <div class="metric-card">
+      <div class="metric-label">Total Orders</div>
+      <div class="metric-value">{{ orders|length }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="metric-card">
+      <div class="metric-label">Total Items</div>
+      <div class="metric-value">{{ total_items }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="metric-card accent">
+      <div class="metric-label">Total Final INR</div>
+      <div class="metric-value">INR {{ total_inr|money }}</div>
+    </div>
+  </div>
 </div>
+
+<div class="card shadow-sm border-0">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0" id="ordersTable">
+      <thead class="table-light">
+        <tr>
+          <th>#</th>
+          <th>Reference</th>
+          <th>Items</th>
+          <th>Currency</th>
+          <th class="text-end">Subtotal INR</th>
+          <th class="text-end">Final INR (3%)</th>
+          <th>Status</th>
+          <th>Created</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in orders %}
+          <tr>
+            <td class="text-muted">#{{ order.id }}</td>
+            <td>
+              <div class="fw-semibold">{{ order.reference }}</div>
+              {% if order.notes %}<div class="text-muted small">{{ order.notes }}</div>{% endif %}
+            </td>
+            <td>
+              {% for it in order['items'][:2] %}
+                <div class="small">{{ it.quantity }} x {{ it.product_name }}</div>
+              {% endfor %}
+              {% if order['items']|length > 2 %}
+                <div class="small text-muted">+{{ order['items']|length - 2 }} more</div>
+              {% endif %}
+            </td>
+            <td>{{ order.currency }}</td>
+            <td class="text-end">INR {{ order.subtotal_inr|money }}</td>
+            <td class="text-end fw-semibold">INR {{ order.final_inr|money }}</td>
+            <td><span class="status-chip status-{{ order.status }}">{{ order.status }}</span></td>
+            <td class="text-muted small">{{ order.created_at }}</td>
+            <td class="text-end">
+              <a class="btn btn-sm btn-outline-primary" href="{{ url_for('order_detail', order_id=order.id) }}">Open</a>
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="9" class="text-center text-muted py-5">
+              No orders yet. Create your first one.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const input = document.getElementById("search");
+    const table = document.getElementById("ordersTable");
+    if (!input || !table) return;
+    input.addEventListener("input", function () {
+      const q = input.value.toLowerCase();
+      for (const row of table.tBodies[0].rows) {
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(q) ? "" : "none";
+      }
+    });
+  })();
+</script>
 {% endblock %}

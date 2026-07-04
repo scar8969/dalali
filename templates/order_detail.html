@@ -1,37 +1,81 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="summary-panel">
-  <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
-    <div>
-      <h1 class="h4 mb-1">Order #{{ order.id }}</h1>
-      <p class="text-muted mb-0">{{ order.product_name }}</p>
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
+          <div>
+            <div class="text-muted small">Order #{{ order.id }}</div>
+            <h1 class="h4 mb-0">{{ order.reference }}</h1>
+          </div>
+          <span class="status-chip status-{{ order.status }}">{{ order.status }}</span>
+        </div>
+
+        {% if order.notes %}
+        <div class="alert alert-light border">{{ order.notes }}</div>
+        {% endif %}
+
+        <h2 class="h6 text-uppercase text-muted mt-3">Line Items</h2>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th class="text-end">Qty</th>
+                <th class="text-end">Unit Price</th>
+                <th class="text-end">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for it in order['items'] %}
+              <tr>
+                <td>{{ it.product_name }}</td>
+                <td class="text-end">{{ it.quantity }}</td>
+                <td class="text-end">{{ order.currency }} {{ it.unit_price_original|money }}</td>
+                <td class="text-end">{{ order.currency }} {{ (it.unit_price_original * it.quantity)|money }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="mt-4 d-flex flex-wrap gap-2">
+          <a class="btn btn-light" href="{{ url_for('dashboard') }}">Back</a>
+          <form method="post" action="{{ url_for('change_status', order_id=order.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="status" value="sent">
+            <button class="btn btn-outline-success" type="submit" {% if order.status == 'sent' %}disabled{% endif %}>Mark Sent</button>
+          </form>
+          <form method="post" action="{{ url_for('change_status', order_id=order.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="status" value="cancelled">
+            <button class="btn btn-outline-warning" type="submit" {% if order.status == 'cancelled' %}disabled{% endif %}>Cancel Order</button>
+          </form>
+          <form method="post" action="{{ url_for('delete_order', order_id=order.id) }}" onsubmit="return confirm('Delete this order?');" class="ms-auto">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-outline-danger" type="submit">Delete</button>
+          </form>
+        </div>
+      </div>
     </div>
   </div>
 
-  <dl class="row mb-0 detail-list">
-    <dt class="col-sm-4">Product</dt>
-    <dd class="col-sm-8">{{ order.product_name }}</dd>
-    <dt class="col-sm-4">Quantity</dt>
-    <dd class="col-sm-8">{{ order.quantity }}</dd>
-    <dt class="col-sm-4">Currency used</dt>
-    <dd class="col-sm-8">{{ order.currency_used or '-' }}</dd>
-    <dt class="col-sm-4">Unit price entered</dt>
-    <dd class="col-sm-8">{{ order.unit_price_original|money }}</dd>
-    <dt class="col-sm-4">INR rate</dt>
-    <dd class="col-sm-8">{{ order.exchange_rate_to_inr or '-' }}</dd>
-    <dt class="col-sm-4">Unit price INR</dt>
-    <dd class="col-sm-8">INR {{ order.unit_price_inr|money }}</dd>
-    <dt class="col-sm-4">Final INR with 3%</dt>
-    <dd class="col-sm-8 fw-semibold">INR {{ order.final_price_inr|money }}</dd>
-  </dl>
-
-  <div class="mt-4">
-    <a class="btn btn-light" href="{{ url_for('dashboard') }}">Back</a>
-    <form method="post" action="{{ url_for('delete_order', order_id=order.id) }}" class="d-inline" onsubmit="return confirm('Delete this order?');">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button class="btn btn-outline-danger" type="submit">Delete</button>
-    </form>
+  <div class="col-lg-5">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <h2 class="h5 mb-3">Calculation</h2>
+        <div class="price-preview">
+          <div><span>Currency used</span><strong>{{ order.currency }}</strong></div>
+          <div><span>Total entered</span><strong>{{ order.currency }} {{ order.unit_price|money }}</strong></div>
+          <div><span>Exchange rate to INR</span><strong>{{ order.exchange_rate }}</strong></div>
+          <div><span>Subtotal INR</span><strong>INR {{ order.subtotal_inr|money }}</strong></div>
+          <div class="total"><span>Final INR (3%)</span><strong>INR {{ order.final_inr|money }}</strong></div>
+        </div>
+        <p class="text-muted small mt-3 mb-0">Created {{ order.created_at }}</p>
+      </div>
+    </div>
   </div>
 </div>
 {% endblock %}

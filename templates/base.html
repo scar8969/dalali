@@ -8,12 +8,15 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   </head>
   <body>
-    <nav class="navbar navbar-expand-lg border-bottom bg-white">
+    <nav class="navbar navbar-expand-lg border-bottom bg-white sticky-top">
       <div class="container">
-        <a class="navbar-brand fw-semibold" href="{{ url_for('dashboard') }}">Sales Order Portal</a>
+        <a class="navbar-brand fw-semibold" href="{{ url_for('dashboard') }}">
+          <span class="brand-dot"></span> Dalal Portal
+        </a>
         <div class="d-flex align-items-center gap-2 ms-auto">
-          <a class="btn btn-sm btn-outline-primary" href="{{ url_for('dashboard') }}">Dashboard</a>
-          <a class="btn btn-sm btn-primary" href="{{ url_for('new_order') }}">New Order</a>
+          <span class="storage-pill" title="Active storage backend">{{ storage|upper }}</span>
+          <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('dashboard') }}">Dashboard</a>
+          <a class="btn btn-sm btn-primary" href="{{ url_for('new_order') }}">+ New Order</a>
         </div>
       </div>
     </nav>
@@ -23,7 +26,9 @@
         {% if messages %}
           <div class="mb-3">
             {% for category, message in messages %}
-              <div class="alert alert-{{ 'danger' if category == 'error' else category }} mb-2" role="alert">{{ message }}</div>
+              <div class="alert alert-{{ 'danger' if category == 'error' else ('success' if category == 'success' else 'info') }} mb-2" role="alert">
+                {{ message }}
+              </div>
             {% endfor %}
           </div>
         {% endif %}
@@ -31,5 +36,9 @@
 
       {% block content %}{% endblock %}
     </main>
+
+    <footer class="text-center text-muted small py-4">
+      Local-first sales order portal &middot; storage: {{ storage|upper }}
+    </footer>
   </body>
 </html>
